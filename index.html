@@ -7,6 +7,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1e2a4a">
 <title>Family Hub</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -968,6 +971,7 @@ function resetIdle(){
 ['pointerdown','touchstart','keydown'].forEach(function(e){ document.addEventListener(e,resetIdle,{passive:true}); });
 
 tickClock(); setInterval(tickClock,10000); resetIdle(); render();
+try{ if('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('sw.js'); }catch(e){}
 setTimeout(function(){ if(bdaysOn(today()).length){ confetti(0,0,140,true); chime(true); } },600);
 })();
 </script>
