@@ -33,6 +33,10 @@ button{font-family:inherit;cursor:pointer;border:0;background:none;color:inherit
 #tabs{flex:1;display:flex;justify-content:center}
 #tabs button{font-family:var(--fun);font-size:20px;font-weight:500;padding:12px 26px;border-radius:40px;margin:0 6px;color:#cdd5ee}
 #tabs button.on{background:#fff;color:var(--navy)}
+.gstat{font-size:22px;width:44px;height:44px;border-radius:50%;background:transparent;margin-right:6px}
+.gstat.bad{background:#fee2e2}
+.gbox{background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:14px 16px;margin:10px 0}
+.gbox code{word-break:break-all;font-size:13px}
 .gear{font-size:26px;width:54px;height:54px;border-radius:50%;background:var(--navy2)}
 #main{position:absolute;top:76px;left:0;right:0;bottom:0;overflow:hidden}
 
@@ -255,6 +259,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:none;color:inherit
     <button data-act="tab" data-tab="chores">⭐ Chores</button>
     <button data-act="tab" data-tab="rewards">🎁 Rewards</button>
   </nav>
+  <button class="gstat hidden" id="gstat" data-act="gstat" aria-label="Google sync"></button>
   <button class="gear" data-act="parents" aria-label="Parents">⚙️</button>
 </header>
 <main id="main"></main>
@@ -263,13 +268,1274 @@ button{font-family:inherit;cursor:pointer;border:0;background:none;color:inherit
 <div id="toast"></div>
 
 <script>
+/* QR code generator — QRCode for JavaScript, Copyright (c) 2009 Kazuhiko Arase, MIT licence (http://www.d-project.com/). Bundled for Family Hub. */
+var QRLib=(function(){ var M={}; function req(n){ return M[n.replace('./','')]; }
+M['QRMode']=(function(){ var __e;
+__e = {
+    MODE_NUMBER :       1 << 0,
+    MODE_ALPHA_NUM :    1 << 1,
+    MODE_8BIT_BYTE :    1 << 2,
+    MODE_KANJI :        1 << 3
+};
+
+return __e; })();
+M['QRErrorCorrectLevel']=(function(){ var __e;
+__e = {
+	L : 1,
+	M : 0,
+	Q : 3,
+	H : 2
+};
+
+
+return __e; })();
+M['QRMaskPattern']=(function(){ var __e;
+__e = {
+	PATTERN000 : 0,
+	PATTERN001 : 1,
+	PATTERN010 : 2,
+	PATTERN011 : 3,
+	PATTERN100 : 4,
+	PATTERN101 : 5,
+	PATTERN110 : 6,
+	PATTERN111 : 7
+};
+
+return __e; })();
+M['QRMath']=(function(){ var __e;
+var QRMath = {
+
+	glog : function(n) {
+	
+		if (n < 1) {
+			throw new Error("glog(" + n + ")");
+		}
+		
+		return QRMath.LOG_TABLE[n];
+	},
+	
+	gexp : function(n) {
+	
+		while (n < 0) {
+			n += 255;
+		}
+	
+		while (n >= 256) {
+			n -= 255;
+		}
+	
+		return QRMath.EXP_TABLE[n];
+	},
+	
+	EXP_TABLE : new Array(256),
+	
+	LOG_TABLE : new Array(256)
+
+};
+	
+for (var i = 0; i < 8; i++) {
+	QRMath.EXP_TABLE[i] = 1 << i;
+}
+for (var i = 8; i < 256; i++) {
+	QRMath.EXP_TABLE[i] = QRMath.EXP_TABLE[i - 4]
+		^ QRMath.EXP_TABLE[i - 5]
+		^ QRMath.EXP_TABLE[i - 6]
+		^ QRMath.EXP_TABLE[i - 8];
+}
+for (var i = 0; i < 255; i++) {
+	QRMath.LOG_TABLE[QRMath.EXP_TABLE[i] ] = i;
+}
+
+__e = QRMath;
+
+return __e; })();
+M['QRPolynomial']=(function(){ var __e;
+var QRMath = req('./QRMath');
+
+function QRPolynomial(num, shift) {
+	if (num.length === undefined) {
+		throw new Error(num.length + "/" + shift);
+	}
+
+	var offset = 0;
+
+	while (offset < num.length && num[offset] === 0) {
+		offset++;
+	}
+
+	this.num = new Array(num.length - offset + shift);
+	for (var i = 0; i < num.length - offset; i++) {
+		this.num[i] = num[i + offset];
+	}
+}
+
+QRPolynomial.prototype = {
+
+	get : function(index) {
+		return this.num[index];
+	},
+	
+	getLength : function() {
+		return this.num.length;
+	},
+	
+	multiply : function(e) {
+	
+		var num = new Array(this.getLength() + e.getLength() - 1);
+	
+		for (var i = 0; i < this.getLength(); i++) {
+			for (var j = 0; j < e.getLength(); j++) {
+				num[i + j] ^= QRMath.gexp(QRMath.glog(this.get(i) ) + QRMath.glog(e.get(j) ) );
+			}
+		}
+	
+		return new QRPolynomial(num, 0);
+	},
+	
+	mod : function(e) {
+	
+		if (this.getLength() - e.getLength() < 0) {
+			return this;
+		}
+	
+		var ratio = QRMath.glog(this.get(0) ) - QRMath.glog(e.get(0) );
+	
+		var num = new Array(this.getLength() );
+		
+		for (var i = 0; i < this.getLength(); i++) {
+			num[i] = this.get(i);
+		}
+		
+		for (var x = 0; x < e.getLength(); x++) {
+			num[x] ^= QRMath.gexp(QRMath.glog(e.get(x) ) + ratio);
+		}
+	
+		// recursive call
+		return new QRPolynomial(num, 0).mod(e);
+	}
+};
+
+__e = QRPolynomial;
+
+return __e; })();
+M['QR8bitByte']=(function(){ var __e;
+var QRMode = req('./QRMode');
+
+function QR8bitByte(data) {
+	this.mode = QRMode.MODE_8BIT_BYTE;
+	this.data = data;
+}
+
+QR8bitByte.prototype = {
+
+	getLength : function() {
+		return this.data.length;
+	},
+	
+	write : function(buffer) {
+		for (var i = 0; i < this.data.length; i++) {
+			// not JIS ...
+			buffer.put(this.data.charCodeAt(i), 8);
+		}
+	}
+};
+
+__e = QR8bitByte;
+
+return __e; })();
+M['QRBitBuffer']=(function(){ var __e;
+function QRBitBuffer() {
+	this.buffer = [];
+	this.length = 0;
+}
+
+QRBitBuffer.prototype = {
+
+	get : function(index) {
+		var bufIndex = Math.floor(index / 8);
+		return ( (this.buffer[bufIndex] >>> (7 - index % 8) ) & 1) == 1;
+	},
+	
+	put : function(num, length) {
+		for (var i = 0; i < length; i++) {
+			this.putBit( ( (num >>> (length - i - 1) ) & 1) == 1);
+		}
+	},
+	
+	getLengthInBits : function() {
+		return this.length;
+	},
+	
+	putBit : function(bit) {
+	
+		var bufIndex = Math.floor(this.length / 8);
+		if (this.buffer.length <= bufIndex) {
+			this.buffer.push(0);
+		}
+	
+		if (bit) {
+			this.buffer[bufIndex] |= (0x80 >>> (this.length % 8) );
+		}
+	
+		this.length++;
+	}
+};
+
+__e = QRBitBuffer;
+
+return __e; })();
+M['QRRSBlock']=(function(){ var __e;
+var QRErrorCorrectLevel = req('./QRErrorCorrectLevel');
+
+function QRRSBlock(totalCount, dataCount) {
+	this.totalCount = totalCount;
+	this.dataCount  = dataCount;
+}
+
+QRRSBlock.RS_BLOCK_TABLE = [
+
+	// L
+	// M
+	// Q
+	// H
+
+	// 1
+	[1, 26, 19],
+	[1, 26, 16],
+	[1, 26, 13],
+	[1, 26, 9],
+	
+	// 2
+	[1, 44, 34],
+	[1, 44, 28],
+	[1, 44, 22],
+	[1, 44, 16],
+
+	// 3
+	[1, 70, 55],
+	[1, 70, 44],
+	[2, 35, 17],
+	[2, 35, 13],
+
+	// 4		
+	[1, 100, 80],
+	[2, 50, 32],
+	[2, 50, 24],
+	[4, 25, 9],
+	
+	// 5
+	[1, 134, 108],
+	[2, 67, 43],
+	[2, 33, 15, 2, 34, 16],
+	[2, 33, 11, 2, 34, 12],
+	
+	// 6
+	[2, 86, 68],
+	[4, 43, 27],
+	[4, 43, 19],
+	[4, 43, 15],
+	
+	// 7		
+	[2, 98, 78],
+	[4, 49, 31],
+	[2, 32, 14, 4, 33, 15],
+	[4, 39, 13, 1, 40, 14],
+	
+	// 8
+	[2, 121, 97],
+	[2, 60, 38, 2, 61, 39],
+	[4, 40, 18, 2, 41, 19],
+	[4, 40, 14, 2, 41, 15],
+	
+	// 9
+	[2, 146, 116],
+	[3, 58, 36, 2, 59, 37],
+	[4, 36, 16, 4, 37, 17],
+	[4, 36, 12, 4, 37, 13],
+	
+	// 10		
+	[2, 86, 68, 2, 87, 69],
+	[4, 69, 43, 1, 70, 44],
+	[6, 43, 19, 2, 44, 20],
+	[6, 43, 15, 2, 44, 16],
+
+	// 11
+	[4, 101, 81],
+	[1, 80, 50, 4, 81, 51],
+	[4, 50, 22, 4, 51, 23],
+	[3, 36, 12, 8, 37, 13],
+
+	// 12
+	[2, 116, 92, 2, 117, 93],
+	[6, 58, 36, 2, 59, 37],
+	[4, 46, 20, 6, 47, 21],
+	[7, 42, 14, 4, 43, 15],
+
+	// 13
+	[4, 133, 107],
+	[8, 59, 37, 1, 60, 38],
+	[8, 44, 20, 4, 45, 21],
+	[12, 33, 11, 4, 34, 12],
+
+	// 14
+	[3, 145, 115, 1, 146, 116],
+	[4, 64, 40, 5, 65, 41],
+	[11, 36, 16, 5, 37, 17],
+	[11, 36, 12, 5, 37, 13],
+
+	// 15
+	[5, 109, 87, 1, 110, 88],
+	[5, 65, 41, 5, 66, 42],
+	[5, 54, 24, 7, 55, 25],
+	[11, 36, 12],
+
+	// 16
+	[5, 122, 98, 1, 123, 99],
+	[7, 73, 45, 3, 74, 46],
+	[15, 43, 19, 2, 44, 20],
+	[3, 45, 15, 13, 46, 16],
+
+	// 17
+	[1, 135, 107, 5, 136, 108],
+	[10, 74, 46, 1, 75, 47],
+	[1, 50, 22, 15, 51, 23],
+	[2, 42, 14, 17, 43, 15],
+
+	// 18
+	[5, 150, 120, 1, 151, 121],
+	[9, 69, 43, 4, 70, 44],
+	[17, 50, 22, 1, 51, 23],
+	[2, 42, 14, 19, 43, 15],
+
+	// 19
+	[3, 141, 113, 4, 142, 114],
+	[3, 70, 44, 11, 71, 45],
+	[17, 47, 21, 4, 48, 22],
+	[9, 39, 13, 16, 40, 14],
+
+	// 20
+	[3, 135, 107, 5, 136, 108],
+	[3, 67, 41, 13, 68, 42],
+	[15, 54, 24, 5, 55, 25],
+	[15, 43, 15, 10, 44, 16],
+
+	// 21
+	[4, 144, 116, 4, 145, 117],
+	[17, 68, 42],
+	[17, 50, 22, 6, 51, 23],
+	[19, 46, 16, 6, 47, 17],
+
+	// 22
+	[2, 139, 111, 7, 140, 112],
+	[17, 74, 46],
+	[7, 54, 24, 16, 55, 25],
+	[34, 37, 13],
+
+	// 23
+	[4, 151, 121, 5, 152, 122],
+	[4, 75, 47, 14, 76, 48],
+	[11, 54, 24, 14, 55, 25],
+	[16, 45, 15, 14, 46, 16],
+
+	// 24
+	[6, 147, 117, 4, 148, 118],
+	[6, 73, 45, 14, 74, 46],
+	[11, 54, 24, 16, 55, 25],
+	[30, 46, 16, 2, 47, 17],
+
+	// 25
+	[8, 132, 106, 4, 133, 107],
+	[8, 75, 47, 13, 76, 48],
+	[7, 54, 24, 22, 55, 25],
+	[22, 45, 15, 13, 46, 16],
+
+	// 26
+	[10, 142, 114, 2, 143, 115],
+	[19, 74, 46, 4, 75, 47],
+	[28, 50, 22, 6, 51, 23],
+	[33, 46, 16, 4, 47, 17],
+
+	// 27
+	[8, 152, 122, 4, 153, 123],
+	[22, 73, 45, 3, 74, 46],
+	[8, 53, 23, 26, 54, 24],
+	[12, 45, 15, 28, 46, 16],
+
+	// 28
+	[3, 147, 117, 10, 148, 118],
+	[3, 73, 45, 23, 74, 46],
+	[4, 54, 24, 31, 55, 25],
+	[11, 45, 15, 31, 46, 16],
+
+	// 29
+	[7, 146, 116, 7, 147, 117],
+	[21, 73, 45, 7, 74, 46],
+	[1, 53, 23, 37, 54, 24],
+	[19, 45, 15, 26, 46, 16],
+
+	// 30
+	[5, 145, 115, 10, 146, 116],
+	[19, 75, 47, 10, 76, 48],
+	[15, 54, 24, 25, 55, 25],
+	[23, 45, 15, 25, 46, 16],
+
+	// 31
+	[13, 145, 115, 3, 146, 116],
+	[2, 74, 46, 29, 75, 47],
+	[42, 54, 24, 1, 55, 25],
+	[23, 45, 15, 28, 46, 16],
+
+	// 32
+	[17, 145, 115],
+	[10, 74, 46, 23, 75, 47],
+	[10, 54, 24, 35, 55, 25],
+	[19, 45, 15, 35, 46, 16],
+
+	// 33
+	[17, 145, 115, 1, 146, 116],
+	[14, 74, 46, 21, 75, 47],
+	[29, 54, 24, 19, 55, 25],
+	[11, 45, 15, 46, 46, 16],
+
+	// 34
+	[13, 145, 115, 6, 146, 116],
+	[14, 74, 46, 23, 75, 47],
+	[44, 54, 24, 7, 55, 25],
+	[59, 46, 16, 1, 47, 17],
+
+	// 35
+	[12, 151, 121, 7, 152, 122],
+	[12, 75, 47, 26, 76, 48],
+	[39, 54, 24, 14, 55, 25],
+	[22, 45, 15, 41, 46, 16],
+
+	// 36
+	[6, 151, 121, 14, 152, 122],
+	[6, 75, 47, 34, 76, 48],
+	[46, 54, 24, 10, 55, 25],
+	[2, 45, 15, 64, 46, 16],
+
+	// 37
+	[17, 152, 122, 4, 153, 123],
+	[29, 74, 46, 14, 75, 47],
+	[49, 54, 24, 10, 55, 25],
+	[24, 45, 15, 46, 46, 16],
+
+	// 38
+	[4, 152, 122, 18, 153, 123],
+	[13, 74, 46, 32, 75, 47],
+	[48, 54, 24, 14, 55, 25],
+	[42, 45, 15, 32, 46, 16],
+
+	// 39
+	[20, 147, 117, 4, 148, 118],
+	[40, 75, 47, 7, 76, 48],
+	[43, 54, 24, 22, 55, 25],
+	[10, 45, 15, 67, 46, 16],
+
+	// 40
+	[19, 148, 118, 6, 149, 119],
+	[18, 75, 47, 31, 76, 48],
+	[34, 54, 24, 34, 55, 25],
+	[20, 45, 15, 61, 46, 16]
+];
+
+QRRSBlock.getRSBlocks = function(typeNumber, errorCorrectLevel) {
+	
+	var rsBlock = QRRSBlock.getRsBlockTable(typeNumber, errorCorrectLevel);
+	
+	if (rsBlock === undefined) {
+		throw new Error("bad rs block @ typeNumber:" + typeNumber + "/errorCorrectLevel:" + errorCorrectLevel);
+	}
+
+	var length = rsBlock.length / 3;
+	
+	var list = [];
+	
+	for (var i = 0; i < length; i++) {
+
+		var count = rsBlock[i * 3 + 0];
+		var totalCount = rsBlock[i * 3 + 1];
+		var dataCount  = rsBlock[i * 3 + 2];
+
+		for (var j = 0; j < count; j++) {
+			list.push(new QRRSBlock(totalCount, dataCount) );	
+		}
+	}
+	
+	return list;
+};
+
+QRRSBlock.getRsBlockTable = function(typeNumber, errorCorrectLevel) {
+
+	switch(errorCorrectLevel) {
+	case QRErrorCorrectLevel.L :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 0];
+	case QRErrorCorrectLevel.M :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 1];
+	case QRErrorCorrectLevel.Q :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 2];
+	case QRErrorCorrectLevel.H :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 3];
+	default :
+		return undefined;
+	}
+};
+
+__e = QRRSBlock;
+
+return __e; })();
+M['QRUtil']=(function(){ var __e;
+var QRMode = req('./QRMode');
+var QRPolynomial = req('./QRPolynomial');
+var QRMath = req('./QRMath');
+var QRMaskPattern = req('./QRMaskPattern');
+
+var QRUtil = {
+
+    PATTERN_POSITION_TABLE : [
+        [],
+        [6, 18],
+        [6, 22],
+        [6, 26],
+        [6, 30],
+        [6, 34],
+        [6, 22, 38],
+        [6, 24, 42],
+        [6, 26, 46],
+        [6, 28, 50],
+        [6, 30, 54],        
+        [6, 32, 58],
+        [6, 34, 62],
+        [6, 26, 46, 66],
+        [6, 26, 48, 70],
+        [6, 26, 50, 74],
+        [6, 30, 54, 78],
+        [6, 30, 56, 82],
+        [6, 30, 58, 86],
+        [6, 34, 62, 90],
+        [6, 28, 50, 72, 94],
+        [6, 26, 50, 74, 98],
+        [6, 30, 54, 78, 102],
+        [6, 28, 54, 80, 106],
+        [6, 32, 58, 84, 110],
+        [6, 30, 58, 86, 114],
+        [6, 34, 62, 90, 118],
+        [6, 26, 50, 74, 98, 122],
+        [6, 30, 54, 78, 102, 126],
+        [6, 26, 52, 78, 104, 130],
+        [6, 30, 56, 82, 108, 134],
+        [6, 34, 60, 86, 112, 138],
+        [6, 30, 58, 86, 114, 142],
+        [6, 34, 62, 90, 118, 146],
+        [6, 30, 54, 78, 102, 126, 150],
+        [6, 24, 50, 76, 102, 128, 154],
+        [6, 28, 54, 80, 106, 132, 158],
+        [6, 32, 58, 84, 110, 136, 162],
+        [6, 26, 54, 82, 110, 138, 166],
+        [6, 30, 58, 86, 114, 142, 170]
+    ],
+
+    G15 : (1 << 10) | (1 << 8) | (1 << 5) | (1 << 4) | (1 << 2) | (1 << 1) | (1 << 0),
+    G18 : (1 << 12) | (1 << 11) | (1 << 10) | (1 << 9) | (1 << 8) | (1 << 5) | (1 << 2) | (1 << 0),
+    G15_MASK : (1 << 14) | (1 << 12) | (1 << 10)    | (1 << 4) | (1 << 1),
+
+    getBCHTypeInfo : function(data) {
+        var d = data << 10;
+        while (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G15) >= 0) {
+            d ^= (QRUtil.G15 << (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G15) ) );    
+        }
+        return ( (data << 10) | d) ^ QRUtil.G15_MASK;
+    },
+
+    getBCHTypeNumber : function(data) {
+        var d = data << 12;
+        while (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G18) >= 0) {
+            d ^= (QRUtil.G18 << (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G18) ) );    
+        }
+        return (data << 12) | d;
+    },
+
+    getBCHDigit : function(data) {
+
+        var digit = 0;
+
+        while (data !== 0) {
+            digit++;
+            data >>>= 1;
+        }
+
+        return digit;
+    },
+
+    getPatternPosition : function(typeNumber) {
+        return QRUtil.PATTERN_POSITION_TABLE[typeNumber - 1];
+    },
+
+    getMask : function(maskPattern, i, j) {
+        
+        switch (maskPattern) {
+            
+        case QRMaskPattern.PATTERN000 : return (i + j) % 2 === 0;
+        case QRMaskPattern.PATTERN001 : return i % 2 === 0;
+        case QRMaskPattern.PATTERN010 : return j % 3 === 0;
+        case QRMaskPattern.PATTERN011 : return (i + j) % 3 === 0;
+        case QRMaskPattern.PATTERN100 : return (Math.floor(i / 2) + Math.floor(j / 3) ) % 2 === 0;
+        case QRMaskPattern.PATTERN101 : return (i * j) % 2 + (i * j) % 3 === 0;
+        case QRMaskPattern.PATTERN110 : return ( (i * j) % 2 + (i * j) % 3) % 2 === 0;
+        case QRMaskPattern.PATTERN111 : return ( (i * j) % 3 + (i + j) % 2) % 2 === 0;
+
+        default :
+            throw new Error("bad maskPattern:" + maskPattern);
+        }
+    },
+
+    getErrorCorrectPolynomial : function(errorCorrectLength) {
+
+        var a = new QRPolynomial([1], 0);
+
+        for (var i = 0; i < errorCorrectLength; i++) {
+            a = a.multiply(new QRPolynomial([1, QRMath.gexp(i)], 0) );
+        }
+
+        return a;
+    },
+
+    getLengthInBits : function(mode, type) {
+
+        if (1 <= type && type < 10) {
+
+            // 1 - 9
+
+            switch(mode) {
+            case QRMode.MODE_NUMBER     : return 10;
+            case QRMode.MODE_ALPHA_NUM  : return 9;
+            case QRMode.MODE_8BIT_BYTE  : return 8;
+            case QRMode.MODE_KANJI      : return 8;
+            default :
+                throw new Error("mode:" + mode);
+            }
+
+        } else if (type < 27) {
+
+            // 10 - 26
+
+            switch(mode) {
+            case QRMode.MODE_NUMBER     : return 12;
+            case QRMode.MODE_ALPHA_NUM  : return 11;
+            case QRMode.MODE_8BIT_BYTE  : return 16;
+            case QRMode.MODE_KANJI      : return 10;
+            default :
+                throw new Error("mode:" + mode);
+            }
+
+        } else if (type < 41) {
+
+            // 27 - 40
+
+            switch(mode) {
+            case QRMode.MODE_NUMBER     : return 14;
+            case QRMode.MODE_ALPHA_NUM  : return 13;
+            case QRMode.MODE_8BIT_BYTE  : return 16;
+            case QRMode.MODE_KANJI      : return 12;
+            default :
+                throw new Error("mode:" + mode);
+            }
+
+        } else {
+            throw new Error("type:" + type);
+        }
+    },
+
+    getLostPoint : function(qrCode) {
+        
+        var moduleCount = qrCode.getModuleCount();
+        var lostPoint = 0;
+        var row = 0; 
+        var col = 0;
+
+        
+        // LEVEL1
+        
+        for (row = 0; row < moduleCount; row++) {
+
+            for (col = 0; col < moduleCount; col++) {
+
+                var sameCount = 0;
+                var dark = qrCode.isDark(row, col);
+
+                for (var r = -1; r <= 1; r++) {
+
+                    if (row + r < 0 || moduleCount <= row + r) {
+                        continue;
+                    }
+
+                    for (var c = -1; c <= 1; c++) {
+
+                        if (col + c < 0 || moduleCount <= col + c) {
+                            continue;
+                        }
+
+                        if (r === 0 && c === 0) {
+                            continue;
+                        }
+
+                        if (dark === qrCode.isDark(row + r, col + c) ) {
+                            sameCount++;
+                        }
+                    }
+                }
+
+                if (sameCount > 5) {
+                    lostPoint += (3 + sameCount - 5);
+                }
+            }
+        }
+
+        // LEVEL2
+
+        for (row = 0; row < moduleCount - 1; row++) {
+            for (col = 0; col < moduleCount - 1; col++) {
+                var count = 0;
+                if (qrCode.isDark(row,     col    ) ) count++;
+                if (qrCode.isDark(row + 1, col    ) ) count++;
+                if (qrCode.isDark(row,     col + 1) ) count++;
+                if (qrCode.isDark(row + 1, col + 1) ) count++;
+                if (count === 0 || count === 4) {
+                    lostPoint += 3;
+                }
+            }
+        }
+
+        // LEVEL3
+
+        for (row = 0; row < moduleCount; row++) {
+            for (col = 0; col < moduleCount - 6; col++) {
+                if (qrCode.isDark(row, col) && 
+                        !qrCode.isDark(row, col + 1) && 
+                         qrCode.isDark(row, col + 2) && 
+                         qrCode.isDark(row, col + 3) && 
+                         qrCode.isDark(row, col + 4) && 
+                        !qrCode.isDark(row, col + 5) && 
+                         qrCode.isDark(row, col + 6) ) {
+                    lostPoint += 40;
+                }
+            }
+        }
+
+        for (col = 0; col < moduleCount; col++) {
+            for (row = 0; row < moduleCount - 6; row++) {
+                if (qrCode.isDark(row, col) &&
+                        !qrCode.isDark(row + 1, col) &&
+                         qrCode.isDark(row + 2, col) &&
+                         qrCode.isDark(row + 3, col) &&
+                         qrCode.isDark(row + 4, col) &&
+                        !qrCode.isDark(row + 5, col) &&
+                         qrCode.isDark(row + 6, col) ) {
+                    lostPoint += 40;
+                }
+            }
+        }
+
+        // LEVEL4
+        
+        var darkCount = 0;
+
+        for (col = 0; col < moduleCount; col++) {
+            for (row = 0; row < moduleCount; row++) {
+                if (qrCode.isDark(row, col) ) {
+                    darkCount++;
+                }
+            }
+        }
+        
+        var ratio = Math.abs(100 * darkCount / moduleCount / moduleCount - 50) / 5;
+        lostPoint += ratio * 10;
+
+        return lostPoint;       
+    }
+
+};
+
+__e = QRUtil;
+
+return __e; })();
+M['index']=(function(){ var __e;
+//---------------------------------------------------------------------
+// QRCode for JavaScript
+//
+// Copyright (c) 2009 Kazuhiko Arase
+//
+// URL: http://www.d-project.com/
+//
+// Licensed under the MIT license:
+//   http://www.opensource.org/licenses/mit-license.php
+//
+// The word "QR Code" is registered trademark of 
+// DENSO WAVE INCORPORATED
+//   http://www.denso-wave.com/qrcode/faqpatent-e.html
+//
+//---------------------------------------------------------------------
+// Modified to work in node for this project (and some refactoring)
+//---------------------------------------------------------------------
+
+var QR8bitByte = req('./QR8bitByte');
+var QRUtil = req('./QRUtil');
+var QRPolynomial = req('./QRPolynomial');
+var QRRSBlock = req('./QRRSBlock');
+var QRBitBuffer = req('./QRBitBuffer');
+
+function QRCode(typeNumber, errorCorrectLevel) {
+	this.typeNumber = typeNumber;
+	this.errorCorrectLevel = errorCorrectLevel;
+	this.modules = null;
+	this.moduleCount = 0;
+	this.dataCache = null;
+	this.dataList = [];
+}
+
+QRCode.prototype = {
+	
+	addData : function(data) {
+		var newData = new QR8bitByte(data);
+		this.dataList.push(newData);
+		this.dataCache = null;
+	},
+	
+	isDark : function(row, col) {
+		if (row < 0 || this.moduleCount <= row || col < 0 || this.moduleCount <= col) {
+			throw new Error(row + "," + col);
+		}
+		return this.modules[row][col];
+	},
+
+	getModuleCount : function() {
+		return this.moduleCount;
+	},
+	
+	make : function() {
+		// Calculate automatically typeNumber if provided is < 1
+		if (this.typeNumber < 1 ){
+			var typeNumber = 1;
+			for (typeNumber = 1; typeNumber < 40; typeNumber++) {
+				var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, this.errorCorrectLevel);
+
+				var buffer = new QRBitBuffer();
+				var totalDataCount = 0;
+				for (var i = 0; i < rsBlocks.length; i++) {
+					totalDataCount += rsBlocks[i].dataCount;
+				}
+
+				for (var x = 0; x < this.dataList.length; x++) {
+					var data = this.dataList[x];
+					buffer.put(data.mode, 4);
+					buffer.put(data.getLength(), QRUtil.getLengthInBits(data.mode, typeNumber) );
+					data.write(buffer);
+				}
+				if (buffer.getLengthInBits() <= totalDataCount * 8)
+					break;
+			}
+			this.typeNumber = typeNumber;
+		}
+		this.makeImpl(false, this.getBestMaskPattern() );
+	},
+	
+	makeImpl : function(test, maskPattern) {
+		
+		this.moduleCount = this.typeNumber * 4 + 17;
+		this.modules = new Array(this.moduleCount);
+		
+		for (var row = 0; row < this.moduleCount; row++) {
+			
+			this.modules[row] = new Array(this.moduleCount);
+			
+			for (var col = 0; col < this.moduleCount; col++) {
+				this.modules[row][col] = null;//(col + row) % 3;
+			}
+		}
+	
+		this.setupPositionProbePattern(0, 0);
+		this.setupPositionProbePattern(this.moduleCount - 7, 0);
+		this.setupPositionProbePattern(0, this.moduleCount - 7);
+		this.setupPositionAdjustPattern();
+		this.setupTimingPattern();
+		this.setupTypeInfo(test, maskPattern);
+		
+		if (this.typeNumber >= 7) {
+			this.setupTypeNumber(test);
+		}
+	
+		if (this.dataCache === null) {
+			this.dataCache = QRCode.createData(this.typeNumber, this.errorCorrectLevel, this.dataList);
+		}
+	
+		this.mapData(this.dataCache, maskPattern);
+	},
+
+	setupPositionProbePattern : function(row, col)  {
+		
+		for (var r = -1; r <= 7; r++) {
+			
+			if (row + r <= -1 || this.moduleCount <= row + r) continue;
+			
+			for (var c = -1; c <= 7; c++) {
+				
+				if (col + c <= -1 || this.moduleCount <= col + c) continue;
+				
+				if ( (0 <= r && r <= 6 && (c === 0 || c === 6) ) || 
+                     (0 <= c && c <= 6 && (r === 0 || r === 6) ) || 
+                     (2 <= r && r <= 4 && 2 <= c && c <= 4) ) {
+					this.modules[row + r][col + c] = true;
+				} else {
+					this.modules[row + r][col + c] = false;
+				}
+			}		
+		}		
+	},
+	
+	getBestMaskPattern : function() {
+	
+		var minLostPoint = 0;
+		var pattern = 0;
+	
+		for (var i = 0; i < 8; i++) {
+			
+			this.makeImpl(true, i);
+	
+			var lostPoint = QRUtil.getLostPoint(this);
+	
+			if (i === 0 || minLostPoint >  lostPoint) {
+				minLostPoint = lostPoint;
+				pattern = i;
+			}
+		}
+	
+		return pattern;
+	},
+	
+	createMovieClip : function(target_mc, instance_name, depth) {
+	
+		var qr_mc = target_mc.createEmptyMovieClip(instance_name, depth);
+		var cs = 1;
+	
+		this.make();
+
+		for (var row = 0; row < this.modules.length; row++) {
+			
+			var y = row * cs;
+			
+			for (var col = 0; col < this.modules[row].length; col++) {
+	
+				var x = col * cs;
+				var dark = this.modules[row][col];
+			
+				if (dark) {
+					qr_mc.beginFill(0, 100);
+					qr_mc.moveTo(x, y);
+					qr_mc.lineTo(x + cs, y);
+					qr_mc.lineTo(x + cs, y + cs);
+					qr_mc.lineTo(x, y + cs);
+					qr_mc.endFill();
+				}
+			}
+		}
+		
+		return qr_mc;
+	},
+
+	setupTimingPattern : function() {
+		
+		for (var r = 8; r < this.moduleCount - 8; r++) {
+			if (this.modules[r][6] !== null) {
+				continue;
+			}
+			this.modules[r][6] = (r % 2 === 0);
+		}
+	
+		for (var c = 8; c < this.moduleCount - 8; c++) {
+			if (this.modules[6][c] !== null) {
+				continue;
+			}
+			this.modules[6][c] = (c % 2 === 0);
+		}
+	},
+	
+	setupPositionAdjustPattern : function() {
+	
+		var pos = QRUtil.getPatternPosition(this.typeNumber);
+		
+		for (var i = 0; i < pos.length; i++) {
+		
+			for (var j = 0; j < pos.length; j++) {
+			
+				var row = pos[i];
+				var col = pos[j];
+				
+				if (this.modules[row][col] !== null) {
+					continue;
+				}
+				
+				for (var r = -2; r <= 2; r++) {
+				
+					for (var c = -2; c <= 2; c++) {
+					
+						if (Math.abs(r) === 2 || 
+                            Math.abs(c) === 2 ||
+                            (r === 0 && c === 0) ) {
+							this.modules[row + r][col + c] = true;
+						} else {
+							this.modules[row + r][col + c] = false;
+						}
+					}
+				}
+			}
+		}
+	},
+	
+	setupTypeNumber : function(test) {
+	
+		var bits = QRUtil.getBCHTypeNumber(this.typeNumber);
+        var mod;
+	
+		for (var i = 0; i < 18; i++) {
+			mod = (!test && ( (bits >> i) & 1) === 1);
+			this.modules[Math.floor(i / 3)][i % 3 + this.moduleCount - 8 - 3] = mod;
+		}
+	
+		for (var x = 0; x < 18; x++) {
+			mod = (!test && ( (bits >> x) & 1) === 1);
+			this.modules[x % 3 + this.moduleCount - 8 - 3][Math.floor(x / 3)] = mod;
+		}
+	},
+	
+	setupTypeInfo : function(test, maskPattern) {
+	
+		var data = (this.errorCorrectLevel << 3) | maskPattern;
+		var bits = QRUtil.getBCHTypeInfo(data);
+        var mod;
+	
+		// vertical		
+		for (var v = 0; v < 15; v++) {
+	
+			mod = (!test && ( (bits >> v) & 1) === 1);
+	
+			if (v < 6) {
+				this.modules[v][8] = mod;
+			} else if (v < 8) {
+				this.modules[v + 1][8] = mod;
+			} else {
+				this.modules[this.moduleCount - 15 + v][8] = mod;
+			}
+		}
+	
+		// horizontal
+		for (var h = 0; h < 15; h++) {
+	
+			mod = (!test && ( (bits >> h) & 1) === 1);
+			
+			if (h < 8) {
+				this.modules[8][this.moduleCount - h - 1] = mod;
+			} else if (h < 9) {
+				this.modules[8][15 - h - 1 + 1] = mod;
+			} else {
+				this.modules[8][15 - h - 1] = mod;
+			}
+		}
+	
+		// fixed module
+		this.modules[this.moduleCount - 8][8] = (!test);
+	
+	},
+	
+	mapData : function(data, maskPattern) {
+		
+		var inc = -1;
+		var row = this.moduleCount - 1;
+		var bitIndex = 7;
+		var byteIndex = 0;
+		
+		for (var col = this.moduleCount - 1; col > 0; col -= 2) {
+	
+			if (col === 6) col--;
+	
+			while (true) {
+	
+				for (var c = 0; c < 2; c++) {
+					
+					if (this.modules[row][col - c] === null) {
+						
+						var dark = false;
+	
+						if (byteIndex < data.length) {
+							dark = ( ( (data[byteIndex] >>> bitIndex) & 1) === 1);
+						}
+	
+						var mask = QRUtil.getMask(maskPattern, row, col - c);
+	
+						if (mask) {
+							dark = !dark;
+						}
+						
+						this.modules[row][col - c] = dark;
+						bitIndex--;
+	
+						if (bitIndex === -1) {
+							byteIndex++;
+							bitIndex = 7;
+						}
+					}
+				}
+								
+				row += inc;
+	
+				if (row < 0 || this.moduleCount <= row) {
+					row -= inc;
+					inc = -inc;
+					break;
+				}
+			}
+		}
+		
+	}
+
+};
+
+QRCode.PAD0 = 0xEC;
+QRCode.PAD1 = 0x11;
+
+QRCode.createData = function(typeNumber, errorCorrectLevel, dataList) {
+	
+	var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, errorCorrectLevel);
+	
+	var buffer = new QRBitBuffer();
+	
+	for (var i = 0; i < dataList.length; i++) {
+		var data = dataList[i];
+		buffer.put(data.mode, 4);
+		buffer.put(data.getLength(), QRUtil.getLengthInBits(data.mode, typeNumber) );
+		data.write(buffer);
+	}
+
+	// calc num max data.
+	var totalDataCount = 0;
+	for (var x = 0; x < rsBlocks.length; x++) {
+		totalDataCount += rsBlocks[x].dataCount;
+	}
+
+	if (buffer.getLengthInBits() > totalDataCount * 8) {
+		throw new Error("code length overflow. (" + 
+            buffer.getLengthInBits() + 
+            ">" +  
+            totalDataCount * 8 + 
+            ")");
+	}
+
+	// end code
+	if (buffer.getLengthInBits() + 4 <= totalDataCount * 8) {
+		buffer.put(0, 4);
+	}
+
+	// padding
+	while (buffer.getLengthInBits() % 8 !== 0) {
+		buffer.putBit(false);
+	}
+
+	// padding
+	while (true) {
+		
+		if (buffer.getLengthInBits() >= totalDataCount * 8) {
+			break;
+		}
+		buffer.put(QRCode.PAD0, 8);
+		
+		if (buffer.getLengthInBits() >= totalDataCount * 8) {
+			break;
+		}
+		buffer.put(QRCode.PAD1, 8);
+	}
+
+	return QRCode.createBytes(buffer, rsBlocks);
+};
+
+QRCode.createBytes = function(buffer, rsBlocks) {
+
+	var offset = 0;
+	
+	var maxDcCount = 0;
+	var maxEcCount = 0;
+	
+	var dcdata = new Array(rsBlocks.length);
+	var ecdata = new Array(rsBlocks.length);
+	
+	for (var r = 0; r < rsBlocks.length; r++) {
+
+		var dcCount = rsBlocks[r].dataCount;
+		var ecCount = rsBlocks[r].totalCount - dcCount;
+
+		maxDcCount = Math.max(maxDcCount, dcCount);
+		maxEcCount = Math.max(maxEcCount, ecCount);
+		
+		dcdata[r] = new Array(dcCount);
+		
+		for (var i = 0; i < dcdata[r].length; i++) {
+			dcdata[r][i] = 0xff & buffer.buffer[i + offset];
+		}
+		offset += dcCount;
+		
+		var rsPoly = QRUtil.getErrorCorrectPolynomial(ecCount);
+		var rawPoly = new QRPolynomial(dcdata[r], rsPoly.getLength() - 1);
+
+		var modPoly = rawPoly.mod(rsPoly);
+		ecdata[r] = new Array(rsPoly.getLength() - 1);
+		for (var x = 0; x < ecdata[r].length; x++) {
+            var modIndex = x + modPoly.getLength() - ecdata[r].length;
+			ecdata[r][x] = (modIndex >= 0)? modPoly.get(modIndex) : 0;
+		}
+
+	}
+	
+	var totalCodeCount = 0;
+	for (var y = 0; y < rsBlocks.length; y++) {
+		totalCodeCount += rsBlocks[y].totalCount;
+	}
+
+	var data = new Array(totalCodeCount);
+	var index = 0;
+
+	for (var z = 0; z < maxDcCount; z++) {
+		for (var s = 0; s < rsBlocks.length; s++) {
+			if (z < dcdata[s].length) {
+				data[index++] = dcdata[s][z];
+			}
+		}
+	}
+
+	for (var xx = 0; xx < maxEcCount; xx++) {
+		for (var t = 0; t < rsBlocks.length; t++) {
+			if (xx < ecdata[t].length) {
+				data[index++] = ecdata[t][xx];
+			}
+		}
+	}
+
+	return data;
+
+};
+
+__e = QRCode;
+
+return __e; })();
+return {QRCode:M['index'],ECL:M['QRErrorCorrectLevel']}; })();
+</script>
+<script>
 (function(){
 'use strict';
 /* =================== Storage =================== */
 var KEY='familyHub.v1';
 var memStore=null;
 function load(){ try{ var r=localStorage.getItem(KEY); return r?JSON.parse(r):null; }catch(e){ return memStore; } }
-function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){ memStore=JSON.parse(JSON.stringify(S)); } }
+function saveLocal(){ try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){ memStore=JSON.parse(JSON.stringify(S)); } }
+function save(){ saveLocal(); if(typeof scheduleSync==='function') scheduleSync(); }
 try{ if(navigator.storage&&navigator.storage.persist) navigator.storage.persist(); }catch(e){}
 
 /* =================== Helpers =================== */
@@ -278,7 +1544,7 @@ var DSH=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 var MSH=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 var COLORS=['#3b82f6','#ec4899','#f97316','#8b5cf6','#10b981','#ef4444','#eab308','#06b6d4','#64748b','#14b8a6'];
-var REPEAT={none:'Does not repeat',daily:'Every day',weekdays:'Weekdays (Mon–Fri)',weekly:'Every week',fortnightly:'Every 2 weeks',monthly:'Every month',yearly:'Every year'};
+var REPEAT={none:'Does not repeat',daily:'Every day',weekdays:'Weekdays (Mon–Fri)',weekly:'Every week',fortnightly:'Every 2 weeks',monthly:'Every month',yearly:'Every year',custom:'Custom repeat (set in Google)'};
 var EMOJI_CHORE='🛏️ 🎒 🍽️ 📚 🚿 😁 👕 👗 📦 ✨ 🗑️ 🐶 🐱 🐟 🌱 💧 🍴 🥣 🏀 ⚽ 🎹 📖 ✏️ 👟 🚗 🧹 🧺 🧸 🧦 🧼 🍎 🥕 🎨 🎵 🚲 🛁 🙏 ❤️ 🏃 🤸 🧠 🔢 🔤 🛒 🪣 🧽'.split(' ');
 var EMOJI_REWARD='🍦 🎮 🎬 🍕 🎁 🎟️ 🍫 🍭 🍩 🧁 🍔 🍟 📱 📺 🏊 🎳 🛍️ 💰 🏆 🌟 🎉 🦄 👑 🏀 ⚽ 🎨 📚 🚲 🛹 🎈 🌈 🍿 🛌 🌙 🏖️ 🎡'.split(' ');
 var EMOJI_FACE='😎 🌸 🏀 🦄 🦁 🐯 🐼 🐨 🐸 🦊 🐶 🐱 🦖 🐬 🦋 🌟 🚀 ⚽ 🎸 👑 🌈 🍓 🤖 👸 🧚 🦸 😀 🙂 👩 👨 👧 👦 👵 👴'.split(' ');
@@ -409,8 +1675,11 @@ function occursOn(ev,d){
   }
   return false;
 }
+function allEvents(){ return G&&G.events.length? S.events.concat(G.events) : S.events; }
+function findEv(id){ return find(S.events,id)||(G?find(G.events,id):null); }
+function isRepeating(e){ return (e.repeat&&e.repeat!=='none')||!!e.rid; }
 function eventsOn(d){
-  return S.events.filter(function(e){return occursOn(e,d);}).sort(function(a,b){
+  return allEvents().filter(function(e){return occursOn(e,d);}).sort(function(a,b){
     if(a.allDay!==b.allDay) return a.allDay?-1:1;
     return (a.start||'').localeCompare(b.start||'');
   });
@@ -423,6 +1692,148 @@ function bdaysOn(d){ return eventsOn(d).filter(function(e){return e.bday;}); }
 function bdayBanner(d){ var b=bdaysOn(d); if(!b.length) return ''; var isT=ds(d)===ds(today());
   return '<div class="bdaybanner"><span class="big">🎂🎈🎉</span>'+(isT?'Happy birthday ':'Birthday: ')+b.map(function(e){ var n=e.byear?d.getFullYear()-(+e.byear):0; return esc(e.title)+(n>0?' ('+n+')':''); }).join(' &amp; ')+(isT?'!':'')+'</div>'; }
 function evTime(e){ return e.bday?'Birthday':e.allDay?'All day':fmtTime(e.start)+(e.end?' – '+fmtTime(e.end):''); }
+
+/* =================== Google (calendar + shared chores/stars) ===================
+   Talks to the Family Hub helper script in the family Google account.
+   The link + key are kept on each device only (never in the GitHub files). */
+var GKEY=KEY+'.google', GCAL=KEY+'.gcal', GBASE=KEY+'.base';
+var SH_KEYS=['pin','bonus','weekStart','family']; // settings shared between devices
+function lsGet(k){ try{ var r=localStorage.getItem(k); return r?JSON.parse(r):null; }catch(e){ return null; } }
+function lsSet(k,v){ try{ if(v==null) localStorage.removeItem(k); else localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+var G={cfg:lsGet(GKEY)||{}, events:[], base:lsGet(GBASE), syncing:false, again:false, lastCal:0, err:'', st:'', t:null};
+G.events=(lsGet(GCAL)||[]).map(gConv);
+function gOn(){ return !!(G.cfg.url&&G.cfg.key); }
+function api(a,body,cfg){
+  cfg=cfg||G.cfg; body=body||{}; body.a=a; body.k=cfg.key; body.cal=cfg.cal||'primary';
+  return fetch(cfg.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body),redirect:'follow'})
+    .then(function(r){ if(!r.ok) throw new Error('Google helper not reachable ('+r.status+')'); return r.text(); })
+    .then(function(t){ var j; try{ j=JSON.parse(t); }catch(e){ throw new Error('Google helper link isn’t right (check it’s the Web app /exec link, access “Anyone”)'); }
+      if(!j.ok) throw new Error(j.code==='key'?'The key has changed — reconnect this device (scan a new QR code)':(j.error||'Google error')); return j; });
+}
+function gStatus(st,err){
+  G.st=st; G.err=err||''; var b=$('gstat'); if(!b) return;
+  if(!gOn()){ b.classList.add('hidden'); return; }
+  b.classList.remove('hidden'); b.classList.toggle('bad',st==='bad');
+  b.textContent=st==='busy'?'🔄':st==='bad'?'⚠️':'☁️';
+}
+function safeRender(){ if($('modal').classList.contains('hidden')&&!(M.tab==='parents'&&M.ptab==='settings')) render(); }
+function guessWho(title){
+  var t=' '+String(title||'').toLowerCase().replace(/[^a-z0-9 ]/g,' ')+' ';
+  return S.members.filter(function(m){ return t.indexOf(' '+m.name.toLowerCase()+' ')>=0; }).map(function(m){return m.id;});
+}
+function gConv(o){
+  var x=o.ext||{}, who=x.fhWho!=null&&x.fhWho!==''?String(x.fhWho).split(',').filter(Boolean):(x.fhWho===''?[]:guessWho(o.title));
+  return {id:'g:'+o.id, gid:o.id, rid:o.rid||'', src:'g', title:o.title, notes:[o.loc,o.notes].filter(Boolean).join('\n'), rawNotes:o.notes||'',
+    date:o.date, endDate:o.endDate||'', allDay:!!o.allDay, start:o.start||'', end:o.end||'',
+    repeat:o.rid?'none':(o.repeat||'none'), until:o.until||'', who:who, bday:x.fhBday==='1', byear:x.fhByear||'', skip:[]};
+}
+function calRange(){ var t=today(); return {from:addDays(t,-45).toISOString(), to:addDays(t,400).toISOString()}; }
+function calRefresh(quiet){
+  if(!gOn()) return Promise.resolve();
+  var r=calRange(); G.lastCal=Date.now();
+  return api('cal.list',r).then(function(j){
+    lsSet(GCAL,j.items); G.events=j.items.map(gConv); gStatus('ok'); safeRender();
+  }).catch(function(e){ gStatus('bad',e.message); if(!quiet) toast('⚠️ '+e.message); });
+}
+/* ---- chores / stars / rewards sync through the Google Sheet ---- */
+function shared(){ var o={}; SH_KEYS.forEach(function(k){ o[k]=S.settings[k]; }); return o; }
+function snap(){ return {members:JSON.stringify(S.members),chores:JSON.stringify(S.chores),rewards:JSON.stringify(S.rewards),settings:JSON.stringify(shared()),log:S.log.map(function(l){return l.id;})}; }
+function idSet(a){ var o={}; a.forEach(function(id){ o[id]=1; }); return o; }
+function baseFrom(d){ var o={members:JSON.stringify(d.members),chores:JSON.stringify(d.chores),rewards:JSON.stringify(d.rewards),log:d.log.map(function(l){return l.id;})}, s={};
+  SH_KEYS.forEach(function(k){ s[k]=d.settings[k]!==undefined?d.settings[k]:S.settings[k]; }); o.settings=JSON.stringify(s); return o; }
+function scheduleSync(){ if(!G||!gOn()) return; clearTimeout(G.t); G.t=setTimeout(function(){ syncNow(true); },1200); }
+function fullChanges(){ return {members:S.members,chores:S.chores,rewards:S.rewards,settings:shared(),logReplace:S.log}; }
+function syncNow(quiet,forced){
+  if(!gOn()) return Promise.resolve();
+  if(G.syncing){ G.again=true; return Promise.resolve(); }
+  var L=snap(), B=G.base, ch={}, n=0;
+  if(forced){ ch=forced; n=1; }
+  else if(B){
+    ['members','chores','rewards'].forEach(function(t){ if(L[t]!==B[t]){ ch[t]=S[t]; n++; } });
+    if(L.settings!==B.settings){ ch.settings=shared(); n++; }
+    var bs=idSet(B.log), ls=idSet(L.log);
+    var add=S.log.filter(function(l){return !bs[l.id];}), del=B.log.filter(function(id){return !ls[id];});
+    if(add.length){ ch.logAdd=add; n++; } if(del.length){ ch.logDel=del; n++; }
+  }
+  G.syncing=true; gStatus('busy');
+  return api('sync',{changes:ch, rev:(B&&!n)?G.cfg.rev:null}).then(function(j){
+    G.syncing=false; var d=j.data;
+    if(d.same){ gStatus('ok'); return; }
+    if(!B&&!forced){ // first time this device joins
+      if(d.empty){ return syncNow(quiet,fullChanges()); }
+      if(S.log.length){ askJoin(d); gStatus('ok'); return; }
+    }
+    applyRemote(d,L); gStatus('ok');
+  }).catch(function(e){ G.syncing=false; gStatus('bad',e.message); if(!quiet) toast('⚠️ '+e.message); })
+  .then(function(){ if(G.again){ G.again=false; return syncNow(true); } });
+}
+function applyRemote(d,L){
+  var N=snap(), changed=false;
+  ['members','chores','rewards'].forEach(function(t){ if(N[t]===L[t]&&JSON.stringify(d[t])!==N[t]){ S[t]=d[t]; changed=true; } });
+  if(N.settings===L.settings) SH_KEYS.forEach(function(k){ if(d.settings[k]!==undefined&&d.settings[k]!==S.settings[k]){ S.settings[k]=d.settings[k]; changed=true; } });
+  var ls=idSet(L.log), ns=idSet(N.log), rs=idSet(d.log.map(function(l){return l.id;}));
+  var added=S.log.filter(function(l){ return !ls[l.id]&&!rs[l.id]; }), gone=idSet(L.log.filter(function(id){ return !ns[id]; }));
+  var log=d.log.filter(function(l){ return !gone[l.id]; }).concat(added);
+  if(JSON.stringify(log.map(function(l){return l.id;}))!==JSON.stringify(N.log)) changed=true;
+  S.log=log;
+  G.base=baseFrom(d); lsSet(GBASE,G.base); G.cfg.rev=d.rev; lsSet(GKEY,G.cfg); saveLocal();
+  if(changed) safeRender();
+  if(dirty()) scheduleSync();
+}
+function dirty(){ var s=snap(),b=G.base; if(!b) return true; return s.members!==b.members||s.chores!==b.chores||s.rewards!==b.rewards||s.settings!==b.settings||s.log.join()!==b.log.join(); }
+function askJoin(d){
+  G.joinData=d;
+  var kidsR=d.members.filter(function(m){return m.kid;}).map(function(m){ var t=0; d.log.forEach(function(l){ if(l.kid===m.id) t+=l.d; }); return m.emoji+' '+esc(m.name)+' '+t+' ⭐'; }).join(' · ');
+  var kidsL=kids().map(function(k){ return k.emoji+' '+esc(k.name)+' '+balance(k.id)+' ⭐'; }).join(' · ');
+  openModal('<h2>☁️ Which chores &amp; stars should we keep?</h2><p>The family Google Sheet already has chores and stars, and so does this device.</p>'+
+    '<div class="gbox"><b>Shared (Google)</b><br>'+(kidsR||'—')+'</div><div class="gbox"><b>This device</b><br>'+(kidsL||'—')+'</div>'+
+    '<p class="hint">The one you don’t pick is replaced. Your calendar isn’t affected.</p>'+
+    '<div class="actions"><button class="btn" data-act="gjoin" data-w="local">Keep this device’s</button><span class="sp"></span><button class="btn pri" data-act="gjoin" data-w="remote">Use the shared ones</button></div>');
+}
+function evPayload(e){ return {title:e.title,date:e.date,allDay:!!e.allDay,start:e.start||'',end:e.end||'',endDate:e.endDate||'',repeat:e.repeat||'none',until:e.until||'',who:e.who||[],notes:e.src==='g'?e.rawNotes:(e.notes||''),bday:!!e.bday,byear:e.byear||''}; }
+function guardShare(cb){
+  if(String(S.settings.pin)==='1234'){ toast('🔒 Change the parent PIN from 1234 first (above), then try again'); return; }
+  M.unlockUntil=0; requirePin(cb); // always ask for the PIN again before showing the key
+}
+function gConnectLink(){
+  var u=location.href.split('#')[0], m=String(G.cfg.url).match(/^https:\/\/script\.google\.com\/macros\/s\/([\w-]+)\/exec$/);
+  if(m) return u+'#fh='+m[1]+'~'+G.cfg.key+'~'+encodeURIComponent(G.cfg.cal||'primary'); // short form = smaller QR code
+  return u+'#connect='+btoa(unescape(encodeURIComponent(JSON.stringify({u:G.cfg.url,k:G.cfg.key,c:G.cfg.cal||'primary'}))));
+}
+function qrSVG(text){
+  var q=new QRLib.QRCode(-1,QRLib.ECL.M); q.addData(text); q.make();
+  var n=q.getModuleCount(), b=4, d='';
+  for(var r=0;r<n;r++) for(var c=0;c<n;c++) if(q.isDark(r,c)) d+='M'+(c+b)+' '+(r+b)+'h1v1h-1z';
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+(n+2*b)+' '+(n+2*b)+'" shape-rendering="crispEdges" style="width:100%;max-width:360px;display:block;margin:0 auto;background:#fff"><rect width="100%" height="100%" fill="#fff"/><path d="'+d+'" fill="#000"/></svg>';
+}
+function gConnect(url,key,cal){
+  var cfg={url:url,key:key,cal:cal||'primary'};
+  toast('Connecting to Google…');
+  return api('ping',{},cfg).then(function(p){ cfg.email=p.email; return api('cals',{},cfg); }).then(function(c){
+    cfg.cals=c.items; cfg.cal=c.items[0].id;
+    G.cfg=cfg; lsSet(GKEY,cfg); G.base=null; lsSet(GBASE,null); G.events=[]; lsSet(GCAL,null);
+    gStatus('ok'); toast('✅ Connected to '+cfg.email); render();
+    return syncNow().then(function(){ return calRefresh(); });
+  }).catch(function(e){ toast('⚠️ '+e.message); });
+}
+function gDisconnect(){ G.cfg={}; G.base=null; G.events=[]; lsSet(GKEY,null); lsSet(GBASE,null); lsSet(GCAL,null); gStatus(''); render(); toast('Disconnected this device'); }
+function gSaveEvent(e,gid,keepRec){
+  toast('Saving to Google…');
+  return api('cal.save',{id:gid||null,ev:evPayload(e),keepRec:!!keepRec}).then(function(){ return calRefresh(true); });
+}
+function gDelete(gid,msg){
+  toast('Deleting…');
+  return api('cal.del',{id:gid}).then(function(){ toast(msg||'🗑️ Deleted'); return calRefresh(true); }).catch(function(e){ toast('⚠️ '+e.message); });
+}
+function moveLocalEvents(){
+  var list=S.events.slice(), done=0, fail=0;
+  function next(){
+    if(!list.length){ saveLocal(); render(); toast(fail?'Moved '+done+', '+fail+' failed — try again':'✅ Moved '+done+' events to Google Calendar'); return calRefresh(true); }
+    var e=list.shift();
+    return api('cal.save',{ev:evPayload(e)}).then(function(){ S.events=S.events.filter(function(x){return x.id!==e.id;}); done++; }).catch(function(){ fail++; }).then(next);
+  }
+  toast('Moving '+list.length+' events…'); return next();
+}
 
 /* =================== Chores logic =================== */
 function weekKey(d){ return 'W'+ds(startOfWeek(d)); }
@@ -452,7 +1863,7 @@ function chipHTML(e,d,showTime){
 function ecardHTML(e,d){
   return '<button class="ecard'+(e.bday?' bday':'')+'" style="border-left-color:'+evColor(e)+'" data-act="ev" data-id="'+e.id+'" data-d="'+ds(d)+'">'+
     '<div class="t">'+(e.bday?'🎂':e.allDay?'All day':fmtTime(e.start))+'</div><div><div class="ti">'+(e.bday?evTitle(e,d).slice(3):esc(e.title))+'</div>'+
-    '<div class="who">'+(e.bday?'Birthday'+(e.byear?' · born '+esc(e.byear):''):esc(evWho(e))+(e.repeat&&e.repeat!=='none'?' · 🔁 '+REPEAT[e.repeat]:''))+'</div></div></button>';
+    '<div class="who">'+(e.bday?'Birthday'+(e.byear?' · born '+esc(e.byear):''):esc(evWho(e))+(e.repeat&&e.repeat!=='none'?' · 🔁 '+REPEAT[e.repeat]:e.rid?' · 🔁 Repeats':''))+'</div></div></button>';
 }
 function renderCal(){
   var v=M.view,c=M.cur,title='';
@@ -658,6 +2069,7 @@ function renderParents(){
       '<div class="two"><div class="fld"><label>Go back to home screen after (minutes idle)</label><input type="number" min="0" max="60" id="s_idle" value="'+st.idleMin+'"></div>'+
       '<div class="fld"><label>Sounds</label><label class="chk"><input type="checkbox" id="s_sound"'+(st.sound?' checked':'')+'> Play happy sounds</label></div></div>'+
       '<button class="btn pri" data-act="savesettings">Save settings</button>'+
+      googleSettingsHTML()+
       '<div class="pgroup" style="margin-top:28px"><h3>Backup</h3><p class="hint">Everything is saved on this tablet. Download a backup now and then, just in case.</p>'+
       '<button class="btn dark" data-act="export">⬇️ Download backup</button> <button class="btn" data-act="import">⬆️ Restore from backup</button>'+
       '<input type="file" id="s_file" accept=".json,application/json" class="hidden"></div>'+
@@ -710,9 +2122,27 @@ function pinKey(k){
 }
 
 /* ---- Event form & detail ---- */
-function eventForm(e,dateStr){
-  var isNew=!e; e=e||{title:'',date:dateStr||ds(M.sel||today()),allDay:false,start:'09:00',end:'',repeat:'none',until:'',endDate:'',who:[],notes:''};
-  M.form={id:e.id||null,who:(e.who||[]).slice(),bday:!!e.bday};
+function googleSettingsHTML(){
+  var h='<div class="pgroup" style="margin-top:28px"><h3>☁️ Google Calendar &amp; sharing</h3>';
+  if(!gOn()){
+    return h+'<p class="hint">Connect to the family Google account so the calendar is the real Google Calendar, and chores, stars and rewards are shared between every device. You need the Web app link and key from the Family Hub helper script (see the setup notes).</p>'+
+      '<div class="fld"><label>Web app link</label><input type="url" id="g_url" placeholder="https://script.google.com/macros/s/…/exec"></div>'+
+      '<div class="fld"><label>Key</label><input type="text" id="g_key" autocomplete="off" placeholder="from the script log"></div>'+
+      '<button class="btn pri" data-act="gconnect">Connect</button></div>';
+  }
+  var c=G.cfg, opts=(c.cals||[]).map(function(x){ return '<option value="'+esc(x.id)+'"'+(x.id===c.cal?' selected':'')+'>'+esc(x.name)+(x.primary?' (main)':'')+'</option>'; }).join('');
+  h+='<p class="hint">Connected to <b>'+esc(c.email||'Google')+'</b>. '+(G.st==='bad'?'⚠️ Last try failed: '+esc(G.err):'Everything syncs automatically.')+'</p>'+
+    '<div class="fld"><label>Calendar</label><select id="g_cal" disabled>'+(opts||'<option>'+esc(c.cal)+'</option>')+'</select><div class="hint">For safety this is set in the helper script (CALENDAR_ID), not here.</div></div>'+
+    '<button class="btn dark" data-act="gsync">🔄 Sync now</button> ';
+  if(S.events.length) h+='<button class="btn pri" data-act="gmove">⬆️ Move '+S.events.length+' event'+(S.events.length>1?'s':'')+' from this device to Google</button> ';
+  h+='<div class="gbox"><b>Add another device</b><br><span class="hint">Scan the QR code with the other tablet or phone (or open the link on it) and it connects itself. Keep it private — anyone with it can see and change the family calendar.</span><br>'+
+    (String(S.settings.pin)==='1234'?'<div class="hint" style="color:#b91c1c">⚠️ Change the parent PIN from 1234 before adding devices.</div>':'')+'<button class="btn sm pri" data-act="gqr">📱 Show QR code</button> <button class="btn sm" data-act="glink">📋 Copy link</button></div>'+
+    '<button class="btn danger" data-act="gdisc">Disconnect this device</button></div>';
+  return h;
+}
+function eventForm(e,dateStr,g){
+  M.detail=null; var isNew=!e; e=e||{title:'',date:dateStr||ds(M.sel||today()),allDay:false,start:'09:00',end:'',repeat:'none',until:'',endDate:'',who:[],notes:''};
+  M.form={id:e.id||null,who:(e.who||[]).slice(),bday:!!e.bday,g:g||null,initRep:e.repeat||'none',initUntil:e.until||''};
   var h='<h2>'+(isNew?'New event':'Edit event')+'</h2>'+
     '<div class="kindrow"><button type="button" id="k_ev" class="'+(e.bday?'':'on')+'" data-act="kind" data-b="0">📅 Event</button><button type="button" id="k_bd" class="b'+(e.bday?' on':'')+'" data-act="kind" data-b="1">🎂 Birthday</button></div>'+
     '<div class="fld"><label>What’s on? (for a birthday, just the name)</label><input type="text" id="f_title" value="'+esc(e.title)+'" placeholder="'+(e.bday?'Whose birthday? e.g. Nanna':'e.g. Basketball game, Dentist, Swimming')+'"></div>'+
@@ -721,11 +2151,12 @@ function eventForm(e,dateStr){
     '<div class="fld"><label>&nbsp;</label><label class="chk"><input type="checkbox" id="f_allday"'+(e.allDay?' checked':'')+'> All day</label></div></div>'+
     '<div class="two" id="f_times"'+(e.allDay?' style="display:none"':'')+'><div class="fld"><label>Starts</label><input type="time" id="f_start" value="'+(e.start||'')+'"></div><div class="fld"><label>Ends (optional)</label><input type="time" id="f_end" value="'+(e.end||'')+'"></div></div>'+
     '<div class="two"><div class="fld"><label>Repeats</label><select id="f_repeat">';
-  for(var k in REPEAT) h+='<option value="'+k+'"'+(e.repeat===k?' selected':'')+'>'+REPEAT[k]+'</option>';
+  for(var k in REPEAT) if(k!=='custom'||e.repeat==='custom') h+='<option value="'+k+'"'+(e.repeat===k?' selected':'')+'>'+REPEAT[k]+'</option>';
   h+='</select></div><div class="fld" id="f_untilw"'+((e.repeat||'none')==='none'?' style="display:none"':'')+'><label>Repeat until (optional)</label><input type="date" id="f_until" value="'+(e.until||'')+'"></div>'+
     '<div class="fld" id="f_enddw"'+((e.repeat||'none')!=='none'?' style="display:none"':'')+'><label>Last day (for multi-day, optional)</label><input type="date" id="f_enddate" value="'+(e.endDate||'')+'"></div></div>'+
     '<div class="fld"><label>Who’s it for? (none = everyone)</label><div class="pills" id="f_who">'+whoPills()+'</div></div>'+
-    '<div class="fld"><label>Notes</label><textarea id="f_notes" placeholder="Address, what to bring…">'+esc(e.notes)+'</textarea></div>'+
+    '<div class="fld"><label>Notes</label><textarea id="f_notes" placeholder="Address, what to bring…">'+esc(e.src==='g'?e.rawNotes:e.notes)+'</textarea></div>'+
+    (gOn()&&(isNew||e.src==='g')?'<p class="hint">☁️ Saves to the family Google Calendar'+(g&&g.series?' — changes every repeat of this event':'')+'</p>':'')+
     '<div class="actions">'+(isNew?'':'<button class="btn danger" data-act="delev">Delete</button>')+'<span class="sp"></span><button class="btn" data-act="close">Cancel</button><button class="btn pri" data-act="saveev">Save</button></div>';
   openModal(h);
 }
@@ -737,30 +2168,41 @@ function saveEvent(){
   var t=$('f_title').value.trim(), d=$('f_date').value;
   if(!t){ $('f_title').focus(); toast('Give the event a name'); return; }
   if(!d){ toast('Pick a date'); return; }
-  var e=M.form.id?find(S.events,M.form.id):null;
+  var old=M.form.id?findEv(M.form.id):null, toGoogle=gOn()&&(!old||old.src==='g');
+  var e=toGoogle?{src:'g'}:old;
   if(!e){ e={id:uid(),skip:[]}; S.events.push(e); }
   e.title=t; e.date=d; e.allDay=$('f_allday').checked; e.start=e.allDay?'':($('f_start').value||'09:00'); e.end=e.allDay?'':$('f_end').value;
   e.repeat=$('f_repeat').value; e.until=e.repeat!=='none'?$('f_until').value:''; e.endDate=e.repeat==='none'?$('f_enddate').value:'';
-  e.who=M.form.who.slice(); e.notes=$('f_notes').value.trim();
+  e.who=M.form.who.slice(); e.notes=$('f_notes').value.trim(); e.rawNotes=e.notes;
   e.bday=M.form.bday; if(e.bday){ e.allDay=true; e.start=''; e.end=''; e.repeat='yearly'; e.endDate=''; e.byear=$('f_byear').value||''; } else e.byear='';
+  if(toGoogle){
+    if(e.repeat==='custom'&&M.form.initRep!=='custom') e.repeat='none';
+    var gid=M.form.g?M.form.g.gid:(old?old.gid:null), keep=!!gid&&e.repeat===M.form.initRep&&e.until===M.form.initUntil;
+    var btn=document.querySelector('[data-act="saveev"]'); if(btn){ btn.disabled=true; btn.textContent='Saving…'; }
+    gSaveEvent(e,gid,keep).then(function(){ closeModal(); M.sel=pd(d); if(M.view!=='list'&&M.view!=='week') M.cur=pd(d); render(); toast('✅ Saved to Google Calendar'); })
+      .catch(function(err){ if(btn){ btn.disabled=false; btn.textContent='Save'; } toast('⚠️ '+err.message); });
+    return;
+  }
   save(); closeModal(); M.sel=pd(d); if(M.view!=='list'&&M.view!=='week') M.cur=pd(d); render(); toast('✅ Saved');
 }
 function eventDetail(id,dStr){
-  var e=find(S.events,id); if(!e) return; M.detail={id:id,d:dStr};
+  var e=findEv(id); if(!e) return; M.detail={id:id,d:dStr}; M.form=null;
   var d=pd(dStr);
   openModal('<div class="detail" style="border-left:8px solid '+evColor(e)+';padding-left:14px"><h2>'+evTitle(e,d)+'</h2>'+
     '<p><span class="lbl">When</span>'+fmtLong(d)+' · '+evTime(e)+(e.endDate&&e.repeat==='none'?' → '+fmtLong(pd(e.endDate)):'')+'</p>'+
-    (e.repeat&&e.repeat!=='none'?'<p><span class="lbl">Repeats</span>'+REPEAT[e.repeat]+(e.until?' until '+fmtShort(pd(e.until)):'')+'</p>':'')+
-    '<p><span class="lbl">Who</span>'+esc(evWho(e))+'</p>'+(e.notes?'<p><span class="lbl">Notes</span>'+esc(e.notes).replace(/\n/g,'<br>')+'</p>':'')+'</div>'+
+    (e.repeat&&e.repeat!=='none'?'<p><span class="lbl">Repeats</span>'+REPEAT[e.repeat]+(e.until?' until '+fmtShort(pd(e.until)):'')+'</p>':e.rid?'<p><span class="lbl">Repeats</span>🔁 Yes</p>':'')+
+    '<p><span class="lbl">Who</span>'+esc(evWho(e))+'</p>'+(e.notes?'<p><span class="lbl">Notes</span>'+esc(e.notes).replace(/\n/g,'<br>')+'</p>':'')+
+    (e.src==='g'?'<p class="hint">☁️ Google Calendar</p>':gOn()?'<p class="hint">📱 Only on this device — move it to Google in ⚙️ Settings</p>':'')+'</div>'+
     '<div class="actions"><button class="btn danger" data-act="delev">Delete</button><span class="sp"></span><button class="btn" data-act="close">Close</button><button class="btn dark" data-act="editev">Edit</button></div>');
 }
 function deleteEvent(){
-  var id=(M.form&&M.form.id)||(M.detail&&M.detail.id), e=find(S.events,id); if(!e) return;
+  var id=(M.form&&M.form.id)||(M.detail&&M.detail.id), e=findEv(id); if(!e) return;
   var dStr=M.detail&&M.detail.id===id?M.detail.d:null;
-  if(e.repeat&&e.repeat!=='none'&&dStr){
+  if(isRepeating(e)&&dStr){
     openModal('<h2>Delete “'+esc(e.title)+'”?</h2><p>This event repeats.</p><div class="actions"><button class="btn" data-act="close">Cancel</button><span class="sp"></span>'+
       '<button class="btn danger" data-act="delone">Just '+fmtShort(pd(dStr))+'</button><button class="btn danger" data-act="delall">All of them</button></div>');
-  } else confirmBox('Delete “'+esc(e.title)+'”?','Delete',function(){ S.events=S.events.filter(function(x){return x.id!==id;}); save(); render(); toast('🗑️ Deleted'); },true);
+  } else if(e.src==='g'){ var gid=(M.form&&M.form.g&&M.form.g.gid)||e.rid||e.gid; confirmBox('Delete “'+esc(e.title)+'”'+(isRepeating(e)?' and all its repeats':'')+' from Google Calendar?','Delete',function(){ gDelete(gid); },true); }
+  else confirmBox('Delete “'+esc(e.title)+'”?','Delete',function(){ S.events=S.events.filter(function(x){return x.id!==id;}); save(); render(); toast('🗑️ Deleted'); },true);
 }
 
 /* ---- Member / chore / reward forms ---- */
@@ -849,11 +2291,14 @@ var A={
   gotoday:function(el){ M.cur=pd(el.getAttribute('data-d')); M.sel=new Date(M.cur); M.view='day'; render(); },
   addev:function(el){ var d=el.getAttribute('data-d'); eventForm(null,d||(M.view==='day'?ds(M.cur):ds(M.sel))); },
   ev:function(el){ eventDetail(el.getAttribute('data-id'),el.getAttribute('data-d')); },
-  editev:function(){ var e=find(S.events,M.detail.id); eventForm(e); },
+  editev:function(){ var e=findEv(M.detail.id); if(!e) return;
+    if(e.src==='g'&&e.rid){ toast('Opening…'); api('cal.get',{id:e.rid}).then(function(j){ var m=gConv(j.item); m.id=e.id; eventForm(m,null,{gid:e.rid,series:true}); }).catch(function(err){ toast('⚠️ '+err.message); }); return; }
+    if(e.src==='g'){ eventForm(e,null,{gid:e.gid}); return; }
+    eventForm(e); },
   saveev:saveEvent,
   delev:function(){ if(M.form&&M.form.id&&!M.detail){ M.detail={id:M.form.id,d:null}; } deleteEvent(); },
-  delone:function(){ var e=find(S.events,M.detail.id); if(e){ e.skip=e.skip||[]; e.skip.push(M.detail.d); save(); } closeModal(); render(); toast('🗑️ Removed that day'); },
-  delall:function(){ var id=M.detail.id; S.events=S.events.filter(function(x){return x.id!==id;}); save(); closeModal(); render(); toast('🗑️ Deleted'); },
+  delone:function(){ var e=findEv(M.detail.id); if(e&&e.src==='g'){ closeModal(); gDelete(e.gid,'🗑️ Removed that day'); return; } if(e){ e.skip=e.skip||[]; e.skip.push(M.detail.d); save(); } closeModal(); render(); toast('🗑️ Removed that day'); },
+  delall:function(){ var id=M.detail.id, ge=findEv(id); if(ge&&ge.src==='g'){ closeModal(); gDelete(ge.rid||ge.gid); return; } S.events=S.events.filter(function(x){return x.id!==id;}); save(); closeModal(); render(); toast('🗑️ Deleted'); },
   kind:function(el){ var b=el.getAttribute('data-b')==='1'; M.form.bday=b; $('k_ev').className=b?'':'on'; $('k_bd').className='b'+(b?' on':'');
     $('f_byearw').style.display=b?'':'none';
     $('f_title').placeholder=b?'Whose birthday? e.g. Nanna':'e.g. Basketball game, Dentist, Swimming';
@@ -872,6 +2317,25 @@ var A={
     });
   },
   confirm:function(){ var cb=M.pending; closeModal(); cb&&cb(); },
+  gstat:function(){ if(G.st==='bad') toast('⚠️ Google: '+G.err); else { toast('☁️ Syncing with Google…'); syncNow(); calRefresh(); } },
+  gconnect:function(){ var u=$('g_url').value.trim(), k=$('g_key').value.trim();
+    if(!/^https:\/\/script\.google(usercontent)?\.com\//.test(u)){ toast('Paste the Web app link from Apps Script'); return; }
+    if(!k){ toast('Paste the key'); return; } gConnect(u,k); },
+  gdisc:function(){ confirmBox('Disconnect this device from Google? Its chores and stars stay as they are now.','Disconnect',gDisconnect,true); },
+  gsync:function(){ toast('🔄 Syncing…'); syncNow().then(function(){ return calRefresh(); }).then(function(){ if(G.st!=='bad') toast('✅ Up to date'); }); },
+  gmove:function(){ confirmBox('Move '+S.events.length+' events from this device into Google Calendar?','Move them',moveLocalEvents); },
+  gqr:function(){ guardShare(function(){ var l=gConnectLink(), svg;
+    try{ svg=qrSVG(l); }catch(e){ toast('Couldn’t make the QR code — use Copy link'); return; }
+    openModal('<h2>📱 Scan to connect</h2><p>On the other tablet or phone, open the <b>Camera</b> (or Google Lens), point it at this code and tap the link. It opens Family Hub and connects itself.</p>'+
+      '<div style="padding:12px;background:#fff;border-radius:14px" id="gqrbox">'+svg+'</div>'+
+      '<p class="hint">If Family Hub is on that device’s home screen, open it from there afterwards — it’ll already be connected. Keep this code private.</p>'+
+      '<div class="actions"><span class="sp"></span><button class="btn pri" data-act="close">Done</button></div>'); }); },
+  glink:function(){ guardShare(function(){ var l=gConnectLink();
+    function shown(){ openModal('<h2>Link for another device</h2><div class="gbox"><code>'+esc(l)+'</code></div><div class="actions"><span class="sp"></span><button class="btn pri" data-act="close">Done</button></div>'); }
+    try{ navigator.clipboard.writeText(l).then(function(){ toast('📋 Link copied'); },shown); }catch(e){ shown(); } }); },
+  gjoin:function(el){ var w=el.getAttribute('data-w'), d=G.joinData; closeModal();
+    if(w==='remote'){ applyRemote(d,snap()); render(); toast('✅ Using the shared chores and stars'); }
+    else syncNow(false,fullChanges()).then(function(){ toast('✅ Shared chores and stars now match this device'); }); },
   close:function(){ closeModal(); },
   pin:function(el){ pinKey(el.getAttribute('data-k')); },
   pickemoji:function(el){ var f=el.getAttribute('data-f'), e=el.getAttribute('data-e'); $(f).value=e; $(f+'_p').textContent=e; },
@@ -925,8 +2389,8 @@ var A={
       document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.parentNode.removeChild(a); },500); toast('⬇️ Backup downloaded'); }
     catch(e){ toast('Could not download on this device'); } },
   import:function(){ $('s_file').click(); },
-  resetstars:function(){ confirmBox('Reset every kid’s stars to 0?','Reset',function(){ S.log=[]; save(); render(); toast('Stars reset'); },true); },
-  resetall:function(){ confirmBox('Erase ALL events, chores and stars?','Erase everything',function(){ try{localStorage.removeItem(KEY);}catch(e){} S=defaults(); save(); M.tab='cal'; render(); },true); }
+  resetstars:function(){ confirmBox('Reset every kid’s stars to 0?'+(gOn()?' This resets them on every device.':''),'Reset',function(){ S.log=[]; save(); render(); toast('Stars reset'); },true); },
+  resetall:function(){ confirmBox('Erase ALL events, chores and stars'+(gOn()?' on this device, and the shared chores and stars on every device? (Google Calendar events stay.)':'?'),'Erase everything',function(){ try{localStorage.removeItem(KEY);}catch(e){} S=defaults(); save(); M.tab='cal'; render(); },true); }
 };
 function step(n){
   var c=M.cur;
@@ -971,6 +2435,18 @@ function resetIdle(){
 ['pointerdown','touchstart','keydown'].forEach(function(e){ document.addEventListener(e,resetIdle,{passive:true}); });
 
 tickClock(); setInterval(tickClock,10000); resetIdle(); render();
+/* Google: connect link, first sync, then keep checking */
+(function(){
+  function fromLink(){
+    var m=location.hash.match(/^#connect=(.+)$/), f=location.hash.match(/^#fh=([\w-]+)~(\w+)~(.+)$/); if(!m&&!f) return false;
+    try{ var c=f?{u:'https://script.google.com/macros/s/'+f[1]+'/exec',k:f[2],c:decodeURIComponent(f[3])}:JSON.parse(decodeURIComponent(escape(atob(m[1]))));
+      history.replaceState(null,'',location.href.split('#')[0]); if(c.u&&c.k) gConnect(c.u,c.k,c.c); }catch(e){ toast('That connect link didn’t work'); }
+    return true; }
+  if(!fromLink()&&gOn()){ gStatus('ok'); syncNow(true); calRefresh(true); }
+  window.addEventListener('hashchange',fromLink);
+  setInterval(function(){ if(document.hidden||!gOn()) return; syncNow(true); if(Date.now()-G.lastCal>4*60000) calRefresh(true); },60000);
+  document.addEventListener('visibilitychange',function(){ if(!document.hidden&&gOn()){ syncNow(true); if(Date.now()-G.lastCal>60000) calRefresh(true); } });
+})();
 try{ if('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('sw.js'); }catch(e){}
 setTimeout(function(){ if(bdaysOn(today()).length){ confetti(0,0,140,true); chime(true); } },600);
 })();
